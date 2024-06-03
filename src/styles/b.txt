@@ -1,0 +1,291 @@
+import React, { useState, useEffect } from "react";
+import {
+  Text,
+  View,
+  StatusBar,
+  SafeAreaView,
+  NativeModules,
+  useColorScheme,
+  TouchableOpacity,
+  NativeEventEmitter,
+  PermissionsAndroid,
+  Platform, // <-- Add this import
+} from "react-native";
+import BleManager from "react-native-ble-manager";
+import { styles } from "./styles/styles";
+import DeviceList from "./DeviceList";
+import { IconButton } from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
+
+const BleManagerModule = NativeModules.BleManager;
+const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+
+const SERVICE_UUID = "12345678-1234-1234-1234-123456789012";
+const NODE_UUIDS = [
+  "8bb59910-d750-49f0-b37e-bdadec7fe46b",
+  "77222839-c5f6-4572-8abc-2ae3eaa2486c",
+  "2065ff9d-2175-4584-bde8-03182447428c",
+  "e8b63e7a-ad4f-4636-8ea3-989f018a85e0",
+];
+
+const BluetoothScreen = () => {
+  const navigation = useNavigation();
+  const peripherals = new Map();
+  const [isScanning, setIsScanning] = useState(false);
+  const [connectedDevices, setConnectedDevices] = useState([]);
+  const [discoveredDevices, setDiscoveredDevices] = useState([]);
+  const [data, setData] = useState({});
+
+  useEffect(() => {
+    BleManager.enableBluetooth().then(() => {
+      console.log("Bluetooth is turned on!");
+    });
+
+    BleManager.start({ showAlert: false }).then(() => {
+      console.log("BleManager initialized");
+      handleGetConnectedDevices();
+    });
+
+    const handleDiscoverPeripheral = (peripheral) => {
+      if (!peripherals.has(peripheral.id)) {
+        peripheral.connected = false;
+        peripherals.set(peripheral.id, peripheral);
+        setDiscoveredDevices(
+          Array.from(peripherals.values()).filter((p) => !p.connected)
+        );
+      }
+    };
+
+    const handleConnectPeripheral = (peripheral) => {
+      console.log("Connected to:", peripheral);
+      peripheral.connected = true;
+      peripherals.set(peripheral.id, peripheral);
+      setConnectedDevices(
+        Array.from(peripherals.values()).filter((p) => p.connected)
+      );
+      setDiscoveredDevices(
+        Array.from(peripherals.values()).filter((p) => !p.connected)
+      );
+    };
+
+    const handleDisconnectPeripheral = (peripheral) => {
+      console.log("Disconnected from:", peripheral);
+      if (peripherals.has(peripheral.id)) {
+        const updatedPeripheral = peripherals.get(peripheral.id);
+        updatedPeripheral.connected = false;
+        peripherals.set(peripheral.id, updatedPeripheral);
+        setConnectedDevices(
+          Array.from(peripherals.values()).filter((p) => p.connected)
+        );
+        setDiscoveredDevices(
+          Array.from(peripherals.values()).filter((p) => !p.connected)
+        );
+      }
+    };
+
+    const handleStopScan = () => {
+      setIsScanning(false);
+      console.log("Scan stopped");
+    };
+
+    const discoverListener = BleManagerEmitter.addListener(
+      "BleManagerDiscoverPeripheral",
+      handleDiscoverPeripheral
+    );
+    const connectListener = BleManagerEmitter.addListener(
+      "BleManagerConnectPeripheral",
+      handleConnectPeripheral
+    );
+    const disconnectListener = BleManagerEmitter.addListener(
+      "BleManagerDisconnectPeripheral",
+      handleDisconnectPeripheral
+    );
+    const stopScanListener = BleManagerEmitter.addListener(
+      "BleManagerStopScan",
+      handleStopScan
+    );
+
+    if (Platform.OS === "android" && Platform.Version >= 23) {
+      PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+      ).then((result) => {
+        if (!result) {
+          PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+          );
+        }
+      });
+    }
+
+    return () => {
+      discoverListener.remove();
+      connectListener.remove();
+      disconnectListener.remove();
+      stopScanListener.remove();
+    };
+  }, []);
+
+  const handleGetConnectedDevices = () => {
+    BleManager.getBondedPeripherals([]).then((results) => {
+      results.forEach((peripheral) => {
+        peripheral.connected = true;
+        peripherals.set(peripheral.id, peripheral);
+      });
+      setConnectedDevices(
+        Array.from(peripherals.values()).filter((p) => p.connected)
+      );
+    });
+  };
+
+  const startScan = () => {
+    if (!isScanning) {
+      BleManager.scan([], 5, true)
+        .then(() => {
+          console.log("Scanning...");
+          setIsScanning(true);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    }
+  };
+
+  const connectToPeripheral = (peripheral) => {
+    BleManager.connect(peripheral.id)
+      .then(() => {
+        console.log("Connected to", peripheral.id);
+        peripheral.connected = true;
+        peripherals.set(peripheral.id, peripheral);
+        setConnectedDevices(
+          Array.from(peripherals.values()).filter((p) => p.connected)
+        );
+        setDiscoveredDevices(
+          Array.from(peripherals.values()).filter((p) => !p.connected)
+        );
+      })
+      .catch((error) => {
+        console.log("Connection error", error);
+      });
+  };
+
+  const disconnectFromPeripheral = (peripheral) => {
+    BleManager.disconnect(peripheral.id)
+      .then(() => {
+        console.log("Disconnected from", peripheral.id);
+        peripheral.connected = false;
+        peripherals.set(peripheral.id, peripheral);
+        setConnectedDevices(
+          Array.from(peripherals.values()).filter((p) => p.connected)
+        );
+        setDiscoveredDevices(
+          Array.from(peripherals.values()).filter((p) => !p.connected)
+        );
+      })
+      .catch((error) => {
+        console.log("Disconnection error", error);
+      });
+  };
+
+  const readData = (peripheralId, serviceUUID, characteristicUUID) => {
+    BleManager.read(peripheralId, serviceUUID, characteristicUUID)
+      .then((readData) => {
+        console.log(`Read data from ${characteristicUUID}:`, readData);
+        setData((prevData) => ({
+          ...prevData,
+          [characteristicUUID]: readData,
+        }));
+      })
+      .catch((error) => {
+        console.log(`Read error for ${characteristicUUID}:`, error);
+        setData((prevData) => ({
+          ...prevData,
+          [characteristicUUID]: "N/A",
+        }));
+      });
+  };
+
+  useEffect(() => {
+    if (connectedDevices.length > 0) {
+      connectedDevices.forEach((device) => {
+        NODE_UUIDS.forEach((nodeUUID) => {
+          readData(device.id, SERVICE_UUID, nodeUUID);
+        });
+      });
+    }
+  }, [connectedDevices]);
+
+  const isDarkMode = useColorScheme() === "dark";
+  const backgroundStyle = {
+    backgroundColor: "#fff",
+  };
+
+  return (
+    <SafeAreaView style={[backgroundStyle, styles.container]}>
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={backgroundStyle.backgroundColor}
+      />
+      <View style={{ paddingHorizontal: 20 }}>
+        <View
+          style={{ flexDirection: "row", alignItems: "center", padding: 10 }}
+        >
+          <IconButton
+            icon="arrow-left"
+            size={24}
+            onPress={() => navigation.goBack()}
+            color="#000"
+          />
+          <Text style={{ marginLeft: 10, fontSize: 18, color: "black" }}>
+            Bluetooth Screen
+          </Text>
+        </View>
+        <TouchableOpacity
+          activeOpacity={0.5}
+          style={styles.scanButton}
+          onPress={startScan}
+        >
+          <Text style={styles.scanButtonText}>
+            {isScanning ? "Scanning..." : "Scan Bluetooth Devices"}
+          </Text>
+        </TouchableOpacity>
+        <Text style={[styles.subtitle, { color: "black" }]}>
+          Discovered Devices:
+        </Text>
+        {Array.from(peripherals.values())
+          .filter((p) => !p.connected)
+          .map((item) => (
+            <DeviceList
+              key={item.id}
+              peripheral={item}
+              connect={connectToPeripheral}
+              disconnect={disconnectFromPeripheral}
+            />
+          ))}
+        <Text style={[styles.subtitle, { color: "black" }]}>
+          Connected Devices:
+        </Text>
+        {connectedDevices.length > 0 ? (
+          connectedDevices.map((device) => (
+            <DeviceList
+              key={device.id}
+              peripheral={device}
+              connect={connectToPeripheral}
+              disconnect={disconnectFromPeripheral}
+            />
+          ))
+        ) : (
+          <Text style={styles.noDevicesText}>No connected device</Text>
+        )}
+        <TouchableOpacity
+          activeOpacity={0.5}
+          style={styles.scanButton}
+          onPress={() => navigation.navigate("Dashboard", { data })} // Pass data to Dashboard
+        >
+          <Text style={styles.scanButtonText}>Go to Dashboard</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+export default BluetoothScreen;

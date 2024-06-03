@@ -8,6 +8,7 @@ import LoginPopup from "./src/LoginPopup";
 import FileSettingsPopup from "./src/FileSettingsPopup";
 import BluetoothScreen from "./src/BluetoothScreen"; // Adjust the path as needed
 import NodeConfigScreen from "./src/NodeConfigScreen";
+import { BleProvider } from "./src/ContextApi/BleContext";
 
 const Stack = createStackNavigator();
 
@@ -18,38 +19,40 @@ const FileSettingsPopupWrapper = ({ route, navigation }) => {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <Stack.Navigator initialRouteName="Dashboard">
-            <Stack.Screen
-              name="Dashboard"
-              component={Dashboard}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="LoginPopup"
-              component={LoginPopup}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="FileSettingsPopup"
-              component={FileSettingsPopupWrapper}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="BluetoothScreen"
-              component={BluetoothScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="NodeConfigScreen"
-              component={NodeConfigScreen}
-              options={{ headerShown: false }}
-            />
-          </Stack.Navigator>
-        </GestureHandlerRootView>
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <BleProvider>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <Stack.Navigator initialRouteName="Dashboard">
+              <Stack.Screen
+                name="Dashboard"
+                component={Dashboard}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="LoginPopup"
+                component={LoginPopup}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="FileSettingsPopup"
+                component={FileSettingsPopupWrapper}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="BluetoothScreen"
+                component={BluetoothScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="NodeConfigScreen"
+                component={NodeConfigScreen}
+                options={{ headerShown: false }}
+              />
+            </Stack.Navigator>
+          </GestureHandlerRootView>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </BleProvider>
   );
 }

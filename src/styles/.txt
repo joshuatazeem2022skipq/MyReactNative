@@ -1,86 +1,4 @@
-// import React, { useContext } from "react";
-// import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-// import { BleContext } from "./ContextApi/BleContext";
-// import { useNavigation } from "@react-navigation/native";
-// import BT from "./assets/blues.png";
-
-// const Dashboard = () => {
-//   const { bleData } = useContext(BleContext);
-//   const navigation = useNavigation();
-
-//   const handleBluetooth = () => {
-//     navigation.navigate("BluetoothScreen");
-//   };
-
-//   // Function to format the weight values to one decimal place
-//   const formatWeight = (weight) => {
-//     return weight ? weight.toFixed(1) : "N/A";
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>Dashboard</Text>
-//       {bleData ? (
-//         <>
-//           <Text>LF Weight: {formatWeight(bleData.lfWeight)}</Text>
-//           <Text>LF Weight %: {bleData.lfWeightP ?? "N/A"}</Text>
-//           <Text>LF Battery: {bleData.lfBattery ?? "N/A"}</Text>
-//           <Text>RF Weight: {formatWeight(bleData.rfWeight)}</Text>
-//           <Text>RF Weight %: {bleData.rfWeightP ?? "N/A"}</Text>
-//           <Text>RF Battery: {bleData.rfBattery ?? "N/A"}</Text>
-//           <Text>LR Weight: {formatWeight(bleData.lrWeight)}</Text>
-//           <Text>LR Weight %: {bleData.lrWeightP ?? "N/A"}</Text>
-//           <Text>LR Battery: {bleData.lrBattery ?? "N/A"}</Text>
-//           <Text>RR Weight: {formatWeight(bleData.rrWeight)}</Text>
-//           <Text>RR Weight %: {bleData.rrWeightP ?? "N/A"}</Text>
-//           <Text>RR Battery: {bleData.rrBattery ?? "N/A"}</Text>
-//           <View style={styles.connectedContainer}>
-//             <TouchableOpacity onPress={handleBluetooth}>
-//               <Image source={BT} style={styles.btImage} />
-//             </TouchableOpacity>
-//             <Text style={styles.connectedText}>Connected</Text>
-//           </View>
-//         </>
-//       ) : (
-//         <Text>No data available</Text>
-//       )}
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     padding: 20,
-//   },
-//   title: {
-//     fontSize: 24,
-//     fontWeight: "bold",
-//     marginBottom: 20,
-//   },
-//   connectedContainer: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     position: "absolute",
-//     bottom: 0,
-//     left: 0,
-//     paddingVertical: 10,
-//     paddingHorizontal: 20,
-//   },
-//   btImage: {
-//     width: 40, // Define your image width here
-//     height: 40, // Define your image height here
-//     marginRight: 10,
-//   },
-//   connectedText: {
-//     fontSize: 18,
-//     fontWeight: "bold",
-//     color: "#F7FC03",
-//   },
-// });
-
-// export default Dashboard;
-import React, { useContext, useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -89,7 +7,7 @@ import {
   StatusBar,
   Image,
   TouchableOpacity,
-  Dimensions,
+  Dimensions, // Import Dimensions
 } from "react-native";
 import { Appbar, RadioButton } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -98,29 +16,27 @@ import BGImage from "./assets/background.png";
 import Logo from "./assets/1.png";
 import BT from "./assets/blues.png";
 import { useNavigation } from "@react-navigation/native";
-import { BleContext } from "./ContextApi/BleContext";
 
+// Get screen dimensions
 const { width, height } = Dimensions.get("window");
 
 const Dashboard = () => {
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const navigation = useNavigation();
-  const { bleData, setBleData } = useContext(BleContext);
 
   const handleLogin = () => {
     setShowLoginPopup(true);
     navigation.navigate("LoginPopup");
   };
 
+  const handleSaveNodeConfig = (config) => {
+    console.log("Saved Config:", config);
+    setShowNodeConfigPopup(false);
+  };
   const handleBluetooth = () => {
     navigation.navigate("BluetoothScreen");
   };
-
-  const formatWeight = (weight) => {
-    return weight ? weight.toFixed(1) : "N/A";
-  };
   const [unit, setUnit] = useState("kg");
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -140,45 +56,29 @@ const Dashboard = () => {
           <View style={styles.centerCard}>
             <Text style={styles.cardTitle}>Front Weight</Text>
             <View style={styles.card}>
-              <Text style={styles.cardValue}>{bleData.lfWeight}</Text>
+              <Text style={styles.cardValue}>68.9%</Text>
             </View>
           </View>
           {/* LF And RF Block */}
-
           <View style={styles.row}>
             <View style={styles.column}>
-              <BatteryIcon
-                size={30}
-                batteryPercentage={bleData.lfBattery ?? "N/A"}
-              />
+              <BatteryIcon size={30} batteryPercentage={32} />
 
               <Text style={styles.columnTitle}> LF</Text>
               <View style={styles.smallCard}>
-                <Text style={styles.columnValue}>
-                  {formatWeight(bleData.lfWeight)}
-                </Text>
-                <Text style={styles.columnPercentage}>
-                  {bleData.lfWeightP ?? "N/A"}%
-                </Text>
+                <Text style={styles.columnValue}>221</Text>
+                <Text style={styles.columnPercentage}>32%</Text>
               </View>
             </View>
             <View style={styles.column}>
-              <BatteryIcon
-                size={30}
-                batteryPercentage={bleData.rfBattery ?? "N/A"}
-              />
+              <BatteryIcon size={30} batteryPercentage={36} />
               <Text style={styles.columnTitle}>RF</Text>
               <View style={styles.smallCard}>
-                <Text style={styles.columnValue}>
-                  {formatWeight(bleData.rfWeight)}
-                </Text>
-                <Text style={styles.columnPercentage}>
-                  {bleData.rfWeightP ?? "N/A"}%
-                </Text>
+                <Text style={styles.columnValue}>224.5</Text>
+                <Text style={styles.columnPercentage}>36%</Text>
               </View>
             </View>
           </View>
-
           {/* Cross Weight Block */}
           <View style={styles.centerCard1}>
             <Text style={styles.cardTitle}>Cross Weight</Text>
@@ -190,33 +90,19 @@ const Dashboard = () => {
           {/* LR And RR Block */}
           <View style={styles.row}>
             <View style={styles.column}>
-              <BatteryIcon
-                size={30}
-                batteryPercentage={bleData.lrBattery ?? "N/A"}
-              />
+              <BatteryIcon size={30} batteryPercentage={50} />
               <Text style={styles.columnTitle}>LR</Text>
               <View style={styles.smallCard}>
-                <Text style={styles.columnValue}>
-                  {formatWeight(bleData.lrWeight)}
-                </Text>
-                <Text style={styles.columnPercentage}>
-                  {bleData.lrWeightP ?? "N/A"}%
-                </Text>
+                <Text style={styles.columnValue}>90.5</Text>
+                <Text style={styles.columnPercentage}>13%</Text>
               </View>
             </View>
             <View style={styles.column}>
-              <BatteryIcon
-                size={30}
-                batteryPercentage={bleData.rrBattery ?? "N/A"}
-              />
+              <BatteryIcon size={30} batteryPercentage={82} />
               <Text style={styles.columnTitle}>RR</Text>
               <View style={styles.smallCard}>
-                <Text style={styles.columnValue}>
-                  {formatWeight(bleData.rrWeight)}
-                </Text>
-                <Text style={styles.columnPercentage}>
-                  {bleData.rrWeightP ?? "N/A"}%
-                </Text>
+                <Text style={styles.columnValue}>120</Text>
+                <Text style={styles.columnPercentage}>17%</Text>
               </View>
             </View>
           </View>
@@ -480,3 +366,313 @@ const styles = StyleSheet.create({
 });
 
 export default Dashboard;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useEffect, useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ImageBackground,
+  StatusBar,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
+import { Appbar, RadioButton } from "react-native-paper";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import BatteryIcon from "./BatteryIcon";
+import BGImage from "./assets/background.png";
+import Logo from "./assets/1.png";
+import BT from "./assets/blues.png";
+import { useNavigation, useIsFocused } from "@react-navigation/native";
+
+const { width, height } = Dimensions.get("window");
+
+const Dashboard = ({ route }) => {
+  const [data, setData] = useState({});
+  const [unit, setUnit] = useState("kg");
+  const navigation = useNavigation();
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (route.params?.data) {
+      setData(route.params.data);
+    }
+  }, [route.params?.data, isFocused]);
+
+  return (
+    <ImageBackground source={BGImage} style={styles.background}>
+      <StatusBar backgroundColor="transparent" translucent />
+      <View style={styles.container}>
+        <Appbar.Header style={{ backgroundColor: "transparent" }}>
+          <Appbar.BackAction onPress={() => navigation.goBack()} />
+          <Appbar.Content title="Dashboard" />
+        </Appbar.Header>
+        <View style={styles.logoContainer}>
+          <Image source={Logo} style={styles.logo} />
+        </View>
+        <View style={styles.bluetoothContainer}>
+          <TouchableOpacity
+            activeOpacity={0.5}
+            onPress={() => navigation.navigate("BluetoothScreen")}
+          >
+            <Image source={BT} style={styles.bluetoothIcon} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.dataContainer}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Weight:</Text>
+            <Text style={styles.value}>
+              {data["8bb59910-d750-49f0-b37e-bdadec7fe46b"] || "N/A"} {unit}
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Temperature:</Text>
+            <Text style={styles.value}>
+              {data["77222839-c5f6-4572-8abc-2ae3eaa2486c"] || "N/A"} °C
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>pH:</Text>
+            <Text style={styles.value}>
+              {data["2065ff9d-2175-4584-bde8-03182447428c"] || "N/A"}
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Battery:</Text>
+            <Text style={styles.value}>
+              {data["e8b63e7a-ad4f-4636-8ea3-989f018a85e0"] || "N/A"} %
+            </Text>
+          </View>
+        </View>
+        <View style={styles.radioButtonContainer}>
+          <RadioButton.Group
+            onValueChange={(newUnit) => setUnit(newUnit)}
+            value={unit}
+          >
+            <View style={styles.radioButton}>
+              <RadioButton value="kg" />
+              <Text>kg</Text>
+            </View>
+            <View style={styles.radioButton}>
+              <RadioButton value="lb" />
+              <Text>lb</Text>
+            </View>
+          </RadioButton.Group>
+        </View>
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Thank you for choosing our IoT solution!
+          </Text>
+        </View>
+      </View>
+    </ImageBackground>
+  );
+};
+
+const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    resizeMode: "cover",
+  },
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  logoContainer: {
+    alignItems: "center",
+    marginVertical: 16,
+  },
+  logo: {
+    width: 200,
+    height: 200,
+  },
+  bluetoothContainer: {
+    alignItems: "center",
+  },
+  bluetoothIcon: {
+    width: 40,
+    height: 40,
+  },
+  dataContainer: {
+    marginTop: 16,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  label: {
+    fontSize: 18,
+    color: "#fff",
+  },
+  value: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  radioButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginVertical: 16,
+  },
+  radioButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 16,
+  },
+  footer: {
+    alignItems: "center",
+    marginVertical: 16,
+  },
+  footerText: {
+    fontSize: 16,
+    color: "#333",
+  },
+});
+
+export default Dashboard;
+
+
+
+
+
+
+
+
+
+
+
+
+ // const readData = async () => {
+  //   if (selectedDevice && isConnected) {
+  //     try {
+  //       const readData = await BleManager.read(
+  //         selectedDevice.id,
+  //         serviceid,
+  //         node1,
+  //         node2
+  //       );
+  //       const message = Buffer.from(readData).toString();
+  //       if (receivedMessage.length > 300) {
+  //         setReceivedMessage("");
+  //       }
+  //       setReceivedMessage((prev) => prev + message + "\n");
+  //       console.log("Read: " + message);
+  //     } catch (error) {
+  //       console.error("Error reading message:", error);
+  //     }
+  //   }
+  // };
+
+  // const readData = async () => {
+  //   if (selectedDevice && isConnected) {
+  //     try {
+  //       const readData = await BleManager.read(
+  //         selectedDevice.id,
+  //         serviceid,
+  //         node1,
+  //         node2
+  //       );
+  //       const message = Buffer.from(readData).toString();
+  //       console.log("Read: " + message);
+
+  //       setBleData((prevData) => ({
+  //         ...prevData,
+  //         frontWeight: message,
+  //       }));
+  //     } catch (error) {
+  //       console.error("Error reading message:", error);
+  //     }
+  //   }
+  // };
+
+  // const readData = async () => {
+  //   if (selectedDevice && isConnected) {
+  //     try {
+  //       const readData = await BleManager.read(
+  //         selectedDevice.id,
+  //         serviceid,
+  //         node1
+  //       );
+  //       const message = Buffer.from(readData).toString();
+  //       console.log("Read: " + message);
+
+  //       // Parse the JSON string
+  //       const jsonObject = JSON.parse(message);
+
+  //       // Extract keys and values separately
+  //       const keys = Object.keys(jsonObject);
+  //       const values = Object.values(jsonObject);
+
+  //       // Log keys and values
+  //       console.log("Keys:", keys);
+  //       console.log("Values:", values);
+
+  //       // Update the context state with the extracted values
+  //       setBleData((prevData) => ({
+  //         ...prevData,
+  //         lfWeight: jsonObject.lfWeight,
+  //         lfWeightP: jsonObject.lfWeightP,
+  //         lfBattery: jsonObject.lfBattery,
+  //       }));
+  //     } catch (error) {
+  //       console.error("Error reading message:", error);
+  //     }
+  //   }
+  // };
