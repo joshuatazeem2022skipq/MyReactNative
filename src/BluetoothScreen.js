@@ -12,24 +12,27 @@ import {
 import BleManager from "react-native-ble-manager";
 import { Buffer } from "buffer";
 import { useNavigation } from "@react-navigation/native";
-import { IconButton } from "react-native-paper";
+import { IconButton, useTheme, MD3Colors } from "react-native-paper";
 import { BleContext } from "./ContextApi/BleContext";
 
 const serviceid = "12345678-1234-1234-1234-123456789012";
 const node1 = "12348765-8765-4321-8765-123456789012";
-const node2 = "87651234-4321-4321-4321-876543210987";
-const node3 = "29d16b06-534f-41a1-85f7-260cf91a217f";
-const node4 = "06e320d1-1a74-45bc-a041-9b323e981ace";
 
 const BluetoothBLETerminal = () => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const navigation = useNavigation();
   const [devices, setDevices] = useState([]);
-  const { setBleData } = useContext(BleContext);
+  const {
+    setBleData,
+    setSelectedDevice,
+    selectedDevice,
+    isConnected,
+    setIsConnected,
+  } = useContext(BleContext);
   const [paired, setPaired] = useState([]);
-  const [selectedDevice, setSelectedDevice] = useState(null);
   const [messageToSend, setMessageToSend] = useState("");
-  const [isConnected, setIsConnected] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const { colors } = useTheme();
 
   const checkBluetoothEnabled = async () => {
     try {
@@ -104,48 +107,31 @@ const BluetoothBLETerminal = () => {
         const messageNode1 = Buffer.from(readDataNode1).toString();
         console.log("Read node1: " + messageNode1);
 
-        const readDataNode2 = await BleManager.read(
-          selectedDevice.id,
-          serviceid,
-          node2
-        );
-        const messageNode2 = Buffer.from(readDataNode2).toString();
-        console.log("Read node2: " + messageNode2);
-
-        const readDataNode3 = await BleManager.read(
-          selectedDevice.id,
-          serviceid,
-          node3
-        );
-        const messageNode3 = Buffer.from(readDataNode3).toString();
-        console.log("Read node3: " + messageNode3);
-
-        const readDataNode4 = await BleManager.read(
-          selectedDevice.id,
-          serviceid,
-          node4
-        );
-        const messageNode4 = Buffer.from(readDataNode4).toString();
-        console.log("Read node4: " + messageNode4);
-
         const data = {
-          lfWeight: JSON.parse(messageNode1).lfWeight,
-          lfWeightP: JSON.parse(messageNode1).lfWeightP,
-          lfBattery: JSON.parse(messageNode1).lfBattery,
-          rfWeight: JSON.parse(messageNode2).rfWeight,
-          rfWeightP: JSON.parse(messageNode2).rfWeightP,
-          rfBattery: JSON.parse(messageNode2).rfBattery,
-          lrWeight: JSON.parse(messageNode3).lrWeight,
-          lrWeightP: JSON.parse(messageNode3).lrWeightP,
-          lrBattery: JSON.parse(messageNode3).lrBattery,
-          rrWeight: JSON.parse(messageNode4).rrWeight,
-          rrWeightP: JSON.parse(messageNode4).rrWeightP,
-          rrBattery: JSON.parse(messageNode4).rrBattery,
+          frontWeight: JSON.parse(messageNode1)["front weight"],
+          crossWeight: JSON.parse(messageNode1)["cross weight"],
+          rearWeight: JSON.parse(messageNode1)["rear weight"],
+          totalWeight: JSON.parse(messageNode1)["total weight"],
+          lfWeight: JSON.parse(messageNode1)["lfWeight"],
+          lfWeightP: JSON.parse(messageNode1)["lfWeightP"],
+          lfBattery: JSON.parse(messageNode1)["lfBattery"],
+          rfWeight: JSON.parse(messageNode1)["rfWeight"],
+          rfWeightP: JSON.parse(messageNode1)["rfWeightP"],
+          rfBattery: JSON.parse(messageNode1)["rfBattery"],
+          lrWeight: JSON.parse(messageNode1)["lrWeight"],
+          lrWeightP: JSON.parse(messageNode1)["lrWeightP"],
+          lrBattery: JSON.parse(messageNode1)["lrBattery"],
+          rrWeight: JSON.parse(messageNode1)["rrWeight"],
+          rrWeightP: JSON.parse(messageNode1)["rrWeightP"],
+          rrBattery: JSON.parse(messageNode1)["rrBattery"],
         };
 
         setBleData(data);
       } catch (error) {
         console.error("Error reading message:", error);
+        if (error.message.includes("Characteristic")) {
+          console.error(`Characteristic not found: ${error.message}`);
+        }
       }
     }
   };
@@ -206,121 +192,179 @@ const BluetoothBLETerminal = () => {
     };
   }, []);
 
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
   return (
-    <View style={styles.mainBody}>
-      <IconButton
-        icon="arrow-left"
-        size={24}
-        onPress={() => navigation.navigate("Dashboard")}
-      />
-      <ScrollView>
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Bluetooth Terminal</Text>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={startScan} style={styles.button}>
-              <Text style={styles.buttonText}>Scan Devices</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={startDeviceDiscovery}
-              style={styles.button}
-            >
-              <Text style={styles.buttonText}>Bonded Devices</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.sectionTitle}>Scanned Devices</Text>
-          {devices.map((device, index) => (
-            <TouchableOpacity
-              key={index}
-              onPress={() => connectToDevice(device)}
-              style={styles.deviceButton}
-            >
-              <Text style={styles.deviceButtonText}>{device.name}</Text>
-            </TouchableOpacity>
-          ))}
-          <Text style={styles.sectionTitle}>Paired Devices</Text>
-          {paired.map((device, index) => (
-            <TouchableOpacity
-              key={index}
-              onPress={() => connectToDevice(device)}
-              style={styles.deviceButton}
-            >
-              <Text style={styles.deviceButtonText}>{device.name}</Text>
-            </TouchableOpacity>
-          ))}
-          <Text style={styles.sectionTitle}>Terminal</Text>
-          {isConnected ? (
-            <View>
-              <TextInput
-                style={styles.input}
-                placeholder="Type message"
-                value={messageToSend}
-                onChangeText={setMessageToSend}
-              />
-              <TouchableOpacity onPress={sendMessage} style={styles.button}>
-                <Text style={styles.buttonText}>Send Message</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => disconnectFromDevice(selectedDevice)}
-                style={styles.button}
-              >
-                <Text style={styles.buttonText}>Disconnect</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <Text>No device connected</Text>
-          )}
-        </View>
+    <View style={[styles.container, isDarkMode && styles.darkContainer]}>
+      <View style={styles.container1}>
+        <IconButton
+          icon="arrow-left"
+          size={24}
+          onPress={() => navigation.navigate("Dashboard")}
+          iconColor={isDarkMode ? MD3Colors.neutral100 : colors.text}
+        />
+        <IconButton
+          icon="theme-light-dark"
+          size={24}
+          onPress={toggleDarkMode}
+          iconColor={isDarkMode ? MD3Colors.neutral100 : colors.text}
+        />
+        <Text style={styles.heading1}>BLE Terminal</Text>
+      </View>
+      <ScrollView style={styles.scroll}>
+        <Text style={[styles.heading, isDarkMode && { color: "white" }]}>
+          Scan Devices
+        </Text>
+        {devices.map((device) => (
+          <TouchableOpacity
+            key={device.id}
+            style={styles.deviceContainer}
+            onPress={() => connectToDevice(device)}
+          >
+            <Text style={styles.deviceName}>{device.name || device.id}</Text>
+          </TouchableOpacity>
+        ))}
+        <Text style={[styles.heading, isDarkMode && { color: "white" }]}>
+          Paired Devices
+        </Text>
+        {paired.map((device) => (
+          <TouchableOpacity
+            key={device.id}
+            style={styles.deviceContainer}
+            onPress={() => connectToDevice(device)}
+          >
+            <Text style={styles.deviceName}>{device.name || device.id}</Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Message"
+          value={messageToSend}
+          onChangeText={setMessageToSend}
+        />
+        <TouchableOpacity style={styles.button} onPress={sendMessage}>
+          <Text style={styles.buttonText}>Send</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={readData}>
+          <Text style={styles.buttonText}>Read</Text>
+        </TouchableOpacity>
+      </View>
+      <TouchableOpacity
+        style={styles.scanButton}
+        onPress={startScan}
+        disabled={isScanning}
+      >
+        <Text style={styles.scanButtonText}>
+          {isScanning ? "Scanning..." : "Start Scan"}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.discoverButton}
+        onPress={startDeviceDiscovery}
+      >
+        <Text style={styles.discoverButtonText}>Discover Paired Devices</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  mainBody: {
+  container: {
     flex: 1,
-    backgroundColor: "white",
+    padding: 20,
+    backgroundColor: "#f5f5f5",
+  },
+  darkContainer: {
+    backgroundColor: "#1a1a1a",
+  },
+  scroll: {
+    marginBottom: 20,
+  },
+  container1: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
   },
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
+  heading1: {
     fontSize: 24,
-    fontWeight: "600",
+    fontWeight: "bold",
+    marginBottom: 7,
+    color: "#0082FC",
+  },
+  heading: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 7,
+    color: "#333",
+  },
+  deviceContainer: {
+    padding: 10,
+    backgroundColor: "#fff",
+    borderRadius: 5,
+    marginBottom: 10,
+    elevation: 1,
+  },
+  deviceName: {
+    fontSize: 16,
+    color: "#333",
+  },
+  inputContainer: {
+    flexDirection: "row",
+    marginBottom: 20,
   },
   input: {
-    height: 40,
-    borderColor: "gray",
+    flex: 1,
+    height: 50,
     borderWidth: 1,
-    marginBottom: 12,
-    paddingLeft: 8,
+    borderColor: "#ccc",
+    borderRadius: 15,
+    paddingHorizontal: 10,
+    marginRight: 10,
+    color: "#333",
+    backgroundColor: "#fff",
   },
   button: {
-    backgroundColor: "#007BFF",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
+    backgroundColor: "red",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 100,
+    justifyContent: "center",
+    alignItems: "center",
   },
   buttonText: {
-    color: "white",
-    fontSize: 18,
-    textAlign: "center",
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
-  deviceButton: {
-    padding: 10,
-    backgroundColor: "#f8f8f8",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+  scanButton: {
+    backgroundColor: "#0082FC",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
   },
-  deviceButtonText: {
-    fontSize: 18,
+  scanButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 20,
+  discoverButton: {
+    backgroundColor: "green",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  discoverButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
 

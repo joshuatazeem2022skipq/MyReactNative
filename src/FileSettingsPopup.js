@@ -1,30 +1,104 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Switch,
-  Modal,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { BleContext } from "./ContextApi/BleContext";
+import BleManager from "react-native-ble-manager";
+import { Buffer } from "buffer";
+
+const CHARACTERISTIC_UUID_setupMode = "87651234-4321-4321-4321-876543210987";
+const serviceid = "12345678-1234-1234-1234-123456789012";
+const CHUNK_SIZE = 20;
 
 const FileSettingsPopup = ({ navigation }) => {
   const [setupMode, setSetupMode] = useState(false);
   const [nodeConfig, setNodeConfig] = useState(false);
+  const [login, setLogin] = useState(false);
+  const [wiFi, setWiFi] = useState(false);
+  const [ble, setBle] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const { selectedDevice, isConnected } = useContext(BleContext);
 
-  const handleSave = () => {
-    if (!setupMode && !nodeConfig) {
-      setErrorMessage("Please enable Setup Mode or Node Configuration");
+  useEffect(() => {
+    if (!selectedDevice || !isConnected) {
+      Alert.alert("Device not connected", "Please connect to a device first.");
+      navigation.navigate("Dashboard");
+    }
+  }, [selectedDevice, isConnected, navigation]);
+
+  const sendChunkedData = async (data) => {
+    const buffer = Buffer.from(data, "utf-8");
+
+    for (let i = 0; i < buffer.length; i += CHUNK_SIZE) {
+      const chunk = buffer.slice(i, i + CHUNK_SIZE);
+      await BleManager.write(
+        selectedDevice.id,
+        serviceid,
+        CHARACTERISTIC_UUID_setupMode,
+        chunk.toJSON().data
+      );
+      await new Promise((resolve) => setTimeout(resolve, 100)); // Adjust delay between chunks if necessary
+    }
+  };
+
+  const sendSetupModeResponse = async (value) => {
+    if (!selectedDevice || !isConnected) {
+      console.error("No device selected or device not connected");
       return;
     }
 
-    if (!nodeConfig) {
+    try {
+      const response = JSON.stringify({ setupMode: value });
+      console.log("Sending setup mode response: ", response);
+      await sendChunkedData(response);
+      console.log("Setup Mode response sent: ", response);
+
+      // If setup mode is enabled, send false response after 3 seconds
+      if (value) {
+        setTimeout(async () => {
+          try {
+            const falseResponse = JSON.stringify({ setupMode: false });
+            console.log("Sending false setup mode response: ", falseResponse);
+            await sendChunkedData(falseResponse);
+            console.log("False Setup Mode response sent: ", falseResponse);
+          } catch (error) {
+            console.error("Error sending false Setup Mode response: ", error);
+          }
+        }, 5000);
+      }
+    } catch (error) {
+      console.error("Error sending Setup Mode response: ", error);
+    }
+  };
+
+  const handleSave = () => {
+    if (!setupMode && !nodeConfig && !login && !wiFi && !ble) {
+      setErrorMessage(
+        "Please enable Setup Mode, Node Configuration, or Login Credentials"
+      );
+      return;
+    }
+
+    if (!nodeConfig && !login && !wiFi && !ble) {
       navigation.navigate("Dashboard");
-    } else {
+    } else if (nodeConfig) {
       setNodeConfig(false);
       navigation.navigate("NodeConfigScreen");
+    } else if (login) {
+      setLogin(false);
+      navigation.navigate("LoginCredentials");
+    } else if (wiFi) {
+      setWiFi(false);
+      navigation.navigate("WiFiCredentials");
+    } else {
+      setBle(false);
+      navigation.navigate("BleCredentials");
     }
   };
 
@@ -43,7 +117,11 @@ const FileSettingsPopup = ({ navigation }) => {
           <Text style={styles.label}>Setup Mode:</Text>
           <Switch
             value={setupMode}
-            onValueChange={(value) => setSetupMode(value)}
+            onValueChange={(value) => {
+              setSetupMode(value);
+              setErrorMessage("");
+              sendSetupModeResponse(value);
+            }}
           />
         </View>
         <View style={styles.row}>
@@ -52,6 +130,18 @@ const FileSettingsPopup = ({ navigation }) => {
             value={nodeConfig}
             onValueChange={(value) => setNodeConfig(value)}
           />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Login Credentials:</Text>
+          <Switch value={login} onValueChange={(value) => setLogin(value)} />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>WiFi Credentials:</Text>
+          <Switch value={wiFi} onValueChange={(value) => setWiFi(value)} />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>BLE Credentials:</Text>
+          <Switch value={ble} onValueChange={(value) => setBle(value)} />
         </View>
         <View style={styles.buttons}>
           <TouchableOpacity style={styles.button} onPress={handleSave}>

@@ -1,11 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from "react-native";
+import BleManager from "react-native-ble-manager";
+import { Buffer } from "buffer";
+import { BleContext } from "./ContextApi/BleContext";
+
+const CHARACTERISTIC_UUID_nodeConfiguration =
+  "29d16b06-534f-41a1-85f7-260cf91a217f";
+const serviceid = "12345678-1234-1234-1234-123456789012";
+const CHUNK_SIZE = 20;
 
 const NodeConfigScreen = ({ navigation }) => {
   const [nodeConfigData, setNodeConfigData] = useState({
@@ -14,8 +23,43 @@ const NodeConfigScreen = ({ navigation }) => {
     hx711Calibration: "",
   });
 
-  const handleNodeConfigSave = () => {
-    navigation.navigate("Dashboard");
+  const { selectedDevice, isConnected } = useContext(BleContext);
+
+  const sendChunkedData = async (data) => {
+    const buffer = Buffer.from(data, "utf-8");
+
+    for (let i = 0; i < buffer.length; i += CHUNK_SIZE) {
+      const chunk = buffer.slice(i, i + CHUNK_SIZE);
+      await BleManager.write(
+        selectedDevice.id,
+        serviceid,
+        CHARACTERISTIC_UUID_nodeConfiguration,
+        chunk.toJSON().data
+      );
+      console.log("Chunk sent: ", chunk.toString()); // Log each chunk sent
+      await new Promise((resolve) => setTimeout(resolve, 100)); // Increase delay between chunks
+    }
+  };
+
+  const handleNodeConfigSave = async () => {
+    if (!selectedDevice || !isConnected) {
+      Alert.alert("Device not connected", "Please connect to a device first.");
+      return;
+    }
+
+    try {
+      const configData = JSON.stringify(nodeConfigData);
+      console.log("Sending node configuration data: ", configData);
+
+      // Send the JSON string in chunks
+      await sendChunkedData(configData);
+
+      console.log("Node configuration data sent: ", configData);
+      navigation.navigate("Dashboard");
+    } catch (error) {
+      console.error("Error sending node configuration data: ", error);
+      Alert.alert("Error", "Failed to send node configuration data.");
+    }
   };
 
   return (

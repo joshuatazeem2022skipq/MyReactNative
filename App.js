@@ -9,6 +9,10 @@ import FileSettingsPopup from "./src/FileSettingsPopup";
 import BluetoothScreen from "./src/BluetoothScreen"; // Adjust the path as needed
 import NodeConfigScreen from "./src/NodeConfigScreen";
 import { BleProvider } from "./src/ContextApi/BleContext";
+import LoginCredentials from "./src/LoginCredentials";
+import WiFiCredentials from "./src/WiFiCredentials";
+import BleCredentials from "./src/BleCredentials";
+import SplashScreen from "./src/styles/SplashScreen";
 
 const Stack = createStackNavigator();
 
@@ -23,7 +27,12 @@ export default function App() {
       <SafeAreaProvider>
         <NavigationContainer>
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <Stack.Navigator initialRouteName="Dashboard">
+            <Stack.Navigator initialRouteName="SplashScreen">
+              <Stack.Screen
+                name="SplashScreen"
+                component={SplashScreen}
+                options={{ headerShown: false }}
+              />
               <Stack.Screen
                 name="Dashboard"
                 component={Dashboard}
@@ -47,6 +56,21 @@ export default function App() {
               <Stack.Screen
                 name="NodeConfigScreen"
                 component={NodeConfigScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="LoginCredentials"
+                component={LoginCredentials}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="WiFiCredentials"
+                component={WiFiCredentials}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="BleCredentials"
+                component={BleCredentials}
                 options={{ headerShown: false }}
               />
             </Stack.Navigator>

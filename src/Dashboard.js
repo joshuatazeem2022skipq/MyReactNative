@@ -1,85 +1,3 @@
-// import React, { useContext } from "react";
-// import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-// import { BleContext } from "./ContextApi/BleContext";
-// import { useNavigation } from "@react-navigation/native";
-// import BT from "./assets/blues.png";
-
-// const Dashboard = () => {
-//   const { bleData } = useContext(BleContext);
-//   const navigation = useNavigation();
-
-//   const handleBluetooth = () => {
-//     navigation.navigate("BluetoothScreen");
-//   };
-
-//   // Function to format the weight values to one decimal place
-//   const formatWeight = (weight) => {
-//     return weight ? weight.toFixed(1) : "N/A";
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>Dashboard</Text>
-//       {bleData ? (
-//         <>
-//           <Text>LF Weight: {formatWeight(bleData.lfWeight)}</Text>
-//           <Text>LF Weight %: {bleData.lfWeightP ?? "N/A"}</Text>
-//           <Text>LF Battery: {bleData.lfBattery ?? "N/A"}</Text>
-//           <Text>RF Weight: {formatWeight(bleData.rfWeight)}</Text>
-//           <Text>RF Weight %: {bleData.rfWeightP ?? "N/A"}</Text>
-//           <Text>RF Battery: {bleData.rfBattery ?? "N/A"}</Text>
-//           <Text>LR Weight: {formatWeight(bleData.lrWeight)}</Text>
-//           <Text>LR Weight %: {bleData.lrWeightP ?? "N/A"}</Text>
-//           <Text>LR Battery: {bleData.lrBattery ?? "N/A"}</Text>
-//           <Text>RR Weight: {formatWeight(bleData.rrWeight)}</Text>
-//           <Text>RR Weight %: {bleData.rrWeightP ?? "N/A"}</Text>
-//           <Text>RR Battery: {bleData.rrBattery ?? "N/A"}</Text>
-//           <View style={styles.connectedContainer}>
-//             <TouchableOpacity onPress={handleBluetooth}>
-//               <Image source={BT} style={styles.btImage} />
-//             </TouchableOpacity>
-//             <Text style={styles.connectedText}>Connected</Text>
-//           </View>
-//         </>
-//       ) : (
-//         <Text>No data available</Text>
-//       )}
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     padding: 20,
-//   },
-//   title: {
-//     fontSize: 24,
-//     fontWeight: "bold",
-//     marginBottom: 20,
-//   },
-//   connectedContainer: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     position: "absolute",
-//     bottom: 0,
-//     left: 0,
-//     paddingVertical: 10,
-//     paddingHorizontal: 20,
-//   },
-//   btImage: {
-//     width: 40, // Define your image width here
-//     height: 40, // Define your image height here
-//     marginRight: 10,
-//   },
-//   connectedText: {
-//     fontSize: 18,
-//     fontWeight: "bold",
-//     color: "#F7FC03",
-//   },
-// });
-
-// export default Dashboard;
 import React, { useContext, useEffect, useState } from "react";
 import {
   StyleSheet,
@@ -105,7 +23,8 @@ const { width, height } = Dimensions.get("window");
 const Dashboard = () => {
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const navigation = useNavigation();
-  const { bleData, setBleData } = useContext(BleContext);
+  const { bleData, handleChangeUnit, unit, handleZeroClick } =
+    useContext(BleContext);
 
   const handleLogin = () => {
     setShowLoginPopup(true);
@@ -119,7 +38,6 @@ const Dashboard = () => {
   const formatWeight = (weight) => {
     return weight ? weight.toFixed(1) : "N/A";
   };
-  const [unit, setUnit] = useState("kg");
 
   return (
     <View style={styles.container}>
@@ -140,7 +58,9 @@ const Dashboard = () => {
           <View style={styles.centerCard}>
             <Text style={styles.cardTitle}>Front Weight</Text>
             <View style={styles.card}>
-              <Text style={styles.cardValue}>{bleData.lfWeight}</Text>
+              <Text style={styles.cardValue}>
+                {formatWeight(bleData.frontWeight)}
+              </Text>
             </View>
           </View>
           {/* LF And RF Block */}
@@ -149,7 +69,7 @@ const Dashboard = () => {
             <View style={styles.column}>
               <BatteryIcon
                 size={30}
-                batteryPercentage={bleData.lfBattery ?? "N/A"}
+                batteryPercentage={bleData.lfBattery ?? "0"}
               />
 
               <Text style={styles.columnTitle}> LF</Text>
@@ -183,7 +103,9 @@ const Dashboard = () => {
           <View style={styles.centerCard1}>
             <Text style={styles.cardTitle}>Cross Weight</Text>
             <View style={styles.card}>
-              <Text style={styles.cardValue}>68.9%</Text>
+              <Text style={styles.cardValue}>
+                {formatWeight(bleData.crossWeight)}
+              </Text>
             </View>
           </View>
 
@@ -225,7 +147,9 @@ const Dashboard = () => {
           <View style={styles.centerCard1}>
             <Text style={styles.cardTitle}>Rear Weight</Text>
             <View style={styles.card}>
-              <Text style={styles.cardValue}>31.1%</Text>
+              <Text style={styles.cardValue}>
+                {formatWeight(bleData.rearWeight)}
+              </Text>
             </View>
           </View>
           {/* Total Weight Block and Radio Buttons */}
@@ -233,15 +157,18 @@ const Dashboard = () => {
             <View style={styles.centerCard3}>
               <Text style={styles.cardTitle}>Total Weight</Text>
               <View style={styles.card5}>
-                <Text style={styles.cardValue}>676</Text>
+                <Text style={styles.cardValue}>
+                  {formatWeight(bleData.totalWeight)}
+                </Text>
               </View>
             </View>
             {/* Radio buttons for selecting unit */}
             <View style={styles.radioContainer}>
               <RadioButton.Group
-                onValueChange={(value) => setUnit(value)}
+                onValueChange={(value) => handleChangeUnit(value)} // Call handleChangeUnit when value changes
                 value={unit}
               >
+                {/* Radio buttons for selecting unit */}
                 <View style={styles.radioOption}>
                   <Text style={styles.radioText}>Kg</Text>
                   <RadioButton
@@ -265,12 +192,13 @@ const Dashboard = () => {
           </View>
 
           {/* Zero Block */}
-          <View style={styles.centerCard4}>
-            <View style={styles.card1}>
-              <Text style={styles.cardValue1}>Zero</Text>
+          <TouchableOpacity style={styles.button} onPress={handleZeroClick}>
+            <View style={styles.centerCard4}>
+              <View style={styles.card1}>
+                <Text style={styles.cardValue1}>Zero</Text>
+              </View>
             </View>
-          </View>
-
+          </TouchableOpacity>
           {/* Connected text */}
           <View style={styles.connectedContainer}>
             <TouchableOpacity onPress={handleBluetooth}>
