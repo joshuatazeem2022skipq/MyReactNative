@@ -1,19 +1,22 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   StyleSheet,
   View,
   ScrollView,
   Text,
-  TextInput,
   PermissionsAndroid,
   TouchableOpacity,
   Platform,
+  NativeEventEmitter,
+  NativeModules,
 } from "react-native";
 import BleManager from "react-native-ble-manager";
 import { Buffer } from "buffer";
 import { useNavigation } from "@react-navigation/native";
 import { IconButton, useTheme, MD3Colors } from "react-native-paper";
 import { BleContext } from "./ContextApi/BleContext";
+import _ from "lodash";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const serviceid = "12345678-1234-1234-1234-123456789012";
 const node1 = "12348765-8765-4321-8765-123456789012";
@@ -30,9 +33,12 @@ const BluetoothBLETerminal = () => {
     setIsConnected,
   } = useContext(BleContext);
   const [paired, setPaired] = useState([]);
-  const [messageToSend, setMessageToSend] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const { colors } = useTheme();
+  const readDataRef = useRef(null);
+
+  const BleManagerModule = NativeModules.BleManager;
+  const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
   const checkBluetoothEnabled = async () => {
     try {
@@ -45,10 +51,22 @@ const BluetoothBLETerminal = () => {
 
   const startScan = () => {
     if (!isScanning) {
+      setDevices([]);
       BleManager.scan([], 5, true)
         .then(() => {
           console.log("Scanning...");
           setIsScanning(true);
+          // Stop scanning after 5 seconds
+          setTimeout(() => {
+            BleManager.stopScan()
+              .then(() => {
+                console.log("Scan stopped");
+                setIsScanning(false);
+              })
+              .catch((error) => {
+                console.error("Error stopping scan:", error);
+              });
+          }, 5000);
         })
         .catch((error) => {
           console.error(error);
@@ -56,93 +74,177 @@ const BluetoothBLETerminal = () => {
     }
   };
 
+  const savePairedDevices = async (pairedDevices) => {
+    try {
+      await AsyncStorage.setItem(
+        "pairedDevices",
+        JSON.stringify(pairedDevices)
+      );
+    } catch (error) {
+      console.error("Error saving paired devices:", error);
+    }
+  };
+
   const startDeviceDiscovery = async () => {
     try {
       const bondedPeripheralsArray = await BleManager.getBondedPeripherals();
       console.log("Bonded peripherals: " + bondedPeripheralsArray.length);
-      setPaired(bondedPeripheralsArray);
+
+      // Filter out duplicate devices based on their IDs
+      const uniquePairedDevices = bondedPeripheralsArray.filter(
+        (device, index, self) =>
+          index === self.findIndex((d) => d.id === device.id)
+      );
+
+      setPaired(uniquePairedDevices);
+      savePairedDevices(uniquePairedDevices);
     } catch (error) {
       console.error(error);
     }
   };
 
+  // const loadPairedDevices = async () => {
+  //   try {
+  //     await AsyncStorage.getItem("example_key");
+
+  //     const pairedDevicesString = await AsyncStorage.getItem("pairedDevices");
+  //     if (pairedDevicesString) {
+  //       const pairedDevices = JSON.parse(pairedDevicesString);
+  //       setPaired(pairedDevices);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error loading paired devices:", error);
+  //   }
+  // };
+  const loadPairedDevices = async () => {
+    try {
+      const pairedDevicesString = await AsyncStorage.getItem("pairedDevices");
+      if (pairedDevicesString) {
+        const pairedDevices = JSON.parse(pairedDevicesString);
+        setPaired(pairedDevices);
+      }
+    } catch (error) {
+      console.error("Error loading paired devices:", error);
+    }
+  };
+  useEffect(() => {
+    loadPairedDevices();
+  }, []);
+
   const connectToDevice = async (device) => {
     try {
       await BleManager.connect(device.id);
-      console.log("Connected");
+      console.log("Connected to device:", device.id);
       setSelectedDevice(device);
       setIsConnected(true);
+
+      // Check if the device is already in the paired list
+      const isAlreadyPaired = paired.some(
+        (pairedDevice) => pairedDevice.id === device.id
+      );
+
+      // if (!isAlreadyPaired) {
+      //   // Add the device to the paired list
+      //   setPaired((prevPaired) => {
+      //     const updatedPaired = [...prevPaired, device];
+      //     savePairedDevices(updatedPaired);
+      //     return updatedPaired;
+      //   });
+      // }
+      if (!isAlreadyPaired) {
+        // Add the device to the paired list
+        const updatedPaired = [...paired, device];
+        setPaired(updatedPaired);
+        savePairedDevices(updatedPaired); // Save updated paired devices
+      }
+
+      // Remove the device from the scan list
+      setDevices((prevDevices) =>
+        prevDevices.filter((d) => d.id !== device.id)
+      );
+
       const deviceInfo = await BleManager.retrieveServices(device.id);
       console.log("Device info:", deviceInfo);
+
+      // Check if the characteristic exists in the retrieved services
+      const characteristicExists = deviceInfo.characteristics.some(
+        (char) => char.characteristic === node1
+      );
+
+      if (characteristicExists) {
+        await BleManager.startNotification(device.id, serviceid, node1);
+      } else {
+        throw new Error("Characteristic not found on the device");
+      }
     } catch (error) {
       console.error("Error connecting to device:", error);
     }
   };
 
-  const sendMessage = async () => {
-    if (selectedDevice && isConnected) {
-      try {
-        const buffer = Buffer.from(messageToSend);
-        await BleManager.write(
-          selectedDevice.id,
-          serviceid,
-          node1,
-          buffer.toJSON().data
-        );
-        console.log("Write: " + buffer.toJSON().data);
-      } catch (error) {
-        console.error("Error sending message:", error);
-      }
-    }
-  };
-
   const readData = async () => {
-    if (selectedDevice && isConnected) {
-      try {
-        const readDataNode1 = await BleManager.read(
-          selectedDevice.id,
-          serviceid,
-          node1
-        );
-        const messageNode1 = Buffer.from(readDataNode1).toString();
-        console.log("Read node1: " + messageNode1);
+    while (true) {
+      if (selectedDevice) {
+        try {
+          const readDataNode1 = await BleManager.read(
+            selectedDevice.id,
+            serviceid,
+            node1
+          );
+          const messageNode1 = Buffer.from(readDataNode1).toString();
+          console.log("Read node1: " + messageNode1);
 
-        const data = {
-          frontWeight: JSON.parse(messageNode1)["front weight"],
-          crossWeight: JSON.parse(messageNode1)["cross weight"],
-          rearWeight: JSON.parse(messageNode1)["rear weight"],
-          totalWeight: JSON.parse(messageNode1)["total weight"],
-          lfWeight: JSON.parse(messageNode1)["lfWeight"],
-          lfWeightP: JSON.parse(messageNode1)["lfWeightP"],
-          lfBattery: JSON.parse(messageNode1)["lfBattery"],
-          rfWeight: JSON.parse(messageNode1)["rfWeight"],
-          rfWeightP: JSON.parse(messageNode1)["rfWeightP"],
-          rfBattery: JSON.parse(messageNode1)["rfBattery"],
-          lrWeight: JSON.parse(messageNode1)["lrWeight"],
-          lrWeightP: JSON.parse(messageNode1)["lrWeightP"],
-          lrBattery: JSON.parse(messageNode1)["lrBattery"],
-          rrWeight: JSON.parse(messageNode1)["rrWeight"],
-          rrWeightP: JSON.parse(messageNode1)["rrWeightP"],
-          rrBattery: JSON.parse(messageNode1)["rrBattery"],
-        };
+          let parsedData;
+          try {
+            parsedData = JSON.parse(messageNode1);
+          } catch (parseError) {
+            console.error("Error parsing data:", parseError);
+            continue;
+          }
 
-        setBleData(data);
-      } catch (error) {
-        console.error("Error reading message:", error);
-        if (error.message.includes("Characteristic")) {
-          console.error(`Characteristic not found: ${error.message}`);
+          const data = {
+            frontWeight: parsedData["front weight"],
+            crossWeight: parsedData["cross weight"],
+            rearWeight: parsedData["rear weight"],
+            totalWeight: parsedData["total weight"],
+            lfWeight: parsedData["lfWeight"],
+            lfWeightP: parsedData["lfWeightP"],
+            lfBattery: parsedData["lfBattery"],
+            rfWeight: parsedData["rfWeight"],
+            rfWeightP: parsedData["rfWeightP"],
+            rfBattery: parsedData["rfBattery"],
+            lrWeight: parsedData["lrWeight"],
+            lrWeightP: parsedData["lrWeightP"],
+            lrBattery: parsedData["lrBattery"],
+            rrWeight: parsedData["rrWeight"],
+            rrWeightP: parsedData["rrWeightP"],
+            rrBattery: parsedData["rrBattery"],
+          };
+
+          setBleData(data);
+        } catch (error) {
+          console.error("Error reading message:", error);
+          if (error.message.includes("Characteristic")) {
+            console.error(`Characteristic not found: ${error.message}`);
+          }
         }
       }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   };
 
   useEffect(() => {
+    readDataRef.current = _.debounce(readData, 500);
+  }, [readData]);
+
+  useEffect(() => {
     let intervalId;
     if (selectedDevice && isConnected) {
-      intervalId = setInterval(readData, 1000);
+      intervalId = setInterval(() => {
+        readDataRef.current();
+      }, 2000);
     }
     return () => {
-      clearInterval(intervalId);
+      if (intervalId) clearInterval(intervalId);
     };
   }, [isConnected, selectedDevice]);
 
@@ -151,6 +253,13 @@ const BluetoothBLETerminal = () => {
       await BleManager.disconnect(device.id);
       setSelectedDevice(null);
       setIsConnected(false);
+
+      // Remove the device from the paired list
+      setPaired((prevPaired) => prevPaired.filter((d) => d.id !== device.id));
+
+      // Save the updated paired devices list
+      savePairedDevices();
+
       console.log("Disconnected from device");
     } catch (error) {
       console.error("Error disconnecting:", error);
@@ -177,7 +286,6 @@ const BluetoothBLETerminal = () => {
         }
       });
     }
-
     BleManager.start({ showAlert: false })
       .then(() => {
         console.log("BleManager initialized");
@@ -186,9 +294,31 @@ const BluetoothBLETerminal = () => {
       .catch((error) => {
         console.error("Error initializing BleManager:", error);
       });
-
     return () => {
       BleManager.stopScan();
+    };
+  }, []);
+
+  const handleDiscoverPeripheral = (peripheral) => {
+    if (!peripheral.name || peripheral.name === "NO NAME") {
+      return;
+    }
+    setDevices((prevDevices) => {
+      if (!prevDevices.find((dev) => dev.id === peripheral.id)) {
+        return [...prevDevices, peripheral];
+      }
+      return prevDevices;
+    });
+  };
+
+  useEffect(() => {
+    const handlerDiscover = BleManagerEmitter.addListener(
+      "BleManagerDiscoverPeripheral",
+      handleDiscoverPeripheral
+    );
+
+    return () => {
+      handlerDiscover.remove();
     };
   }, []);
 
@@ -219,11 +349,12 @@ const BluetoothBLETerminal = () => {
         </Text>
         {devices.map((device) => (
           <TouchableOpacity
-            key={device.id}
+            key={`devices-${device.id}`}
             style={styles.deviceContainer}
             onPress={() => connectToDevice(device)}
           >
             <Text style={styles.deviceName}>{device.name || device.id}</Text>
+            <Text style={styles.deviceId}>{device.id}</Text>
           </TouchableOpacity>
         ))}
         <Text style={[styles.heading, isDarkMode && { color: "white" }]}>
@@ -231,28 +362,16 @@ const BluetoothBLETerminal = () => {
         </Text>
         {paired.map((device) => (
           <TouchableOpacity
-            key={device.id}
+            key={`paired-${device.id}`}
             style={styles.deviceContainer}
             onPress={() => connectToDevice(device)}
+            onLongPress={() => disconnectFromDevice(device)}
           >
             <Text style={styles.deviceName}>{device.name || device.id}</Text>
+            <Text style={styles.deviceId}>{device.id}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Message"
-          value={messageToSend}
-          onChangeText={setMessageToSend}
-        />
-        <TouchableOpacity style={styles.button} onPress={sendMessage}>
-          <Text style={styles.buttonText}>Send</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={readData}>
-          <Text style={styles.buttonText}>Read</Text>
-        </TouchableOpacity>
-      </View>
       <TouchableOpacity
         style={styles.scanButton}
         onPress={startScan}
@@ -301,70 +420,44 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   deviceContainer: {
-    padding: 10,
-    backgroundColor: "#fff",
-    borderRadius: 5,
+    padding: 15,
     marginBottom: 10,
-    elevation: 1,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
   },
   deviceName: {
     fontSize: 16,
-    color: "#333",
-  },
-  inputContainer: {
-    flexDirection: "row",
-    marginBottom: 20,
-  },
-  input: {
-    flex: 1,
-    height: 50,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 15,
-    paddingHorizontal: 10,
-    marginRight: 10,
-    color: "#333",
-    backgroundColor: "#fff",
-  },
-  button: {
-    backgroundColor: "red",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 100,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
     fontWeight: "bold",
-    fontSize: 16,
+  },
+  deviceId: {
+    fontSize: 14,
+    color: "#666",
   },
   scanButton: {
+    padding: 15,
+    borderRadius: 8,
     backgroundColor: "#0082FC",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 15,
-    justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
   },
   scanButtonText: {
     color: "#fff",
-    fontWeight: "bold",
     fontSize: 16,
+    fontWeight: "bold",
   },
   discoverButton: {
-    backgroundColor: "green",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 15,
-    justifyContent: "center",
+    padding: 15,
+    borderRadius: 8,
+    backgroundColor: "#0082FC",
     alignItems: "center",
+    marginBottom: 10,
   },
   discoverButtonText: {
     color: "#fff",
-    fontWeight: "bold",
     fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

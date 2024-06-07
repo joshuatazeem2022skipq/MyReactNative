@@ -23,8 +23,14 @@ const { width, height } = Dimensions.get("window");
 const Dashboard = () => {
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const navigation = useNavigation();
-  const { bleData, handleChangeUnit, unit, handleZeroClick } =
-    useContext(BleContext);
+  const {
+    bleData,
+    handleChangeUnit,
+    unit,
+    handleZeroClick,
+    selectedDevice,
+    isConnected,
+  } = useContext(BleContext);
 
   const handleLogin = () => {
     setShowLoginPopup(true);
@@ -204,7 +210,18 @@ const Dashboard = () => {
             <TouchableOpacity onPress={handleBluetooth}>
               <Image source={BT} style={styles.btImage} />
             </TouchableOpacity>
-            <Text style={styles.connectedText}>Connected</Text>
+            <View style={{ flexDirection: "column" }}>
+              <Text
+                style={selectedDevice ? styles.connected : styles.disconnected}
+              >
+                {selectedDevice ? selectedDevice.name : "-"}
+              </Text>
+              <Text
+                style={selectedDevice ? styles.connected : styles.disconnected}
+              >
+                {isConnected ? "Connected" : "Disconnected"}
+              </Text>
+            </View>
           </View>
         </View>
       </ImageBackground>
@@ -352,6 +369,14 @@ const styles = StyleSheet.create({
     fontSize: width * 0.045,
     fontWeight: "bold",
     color: "#F7FC03",
+  },
+  connected: {
+    color: "#F7FC03",
+    fontSize: 19,
+  },
+  disconnected: {
+    color: "red",
+    fontSize: 18,
   },
   menuIcon: {
     cursor: "pointer",

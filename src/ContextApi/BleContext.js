@@ -1,10 +1,10 @@
-import React, { createContext, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
 import { Buffer } from "buffer";
 import BleManager from "react-native-ble-manager";
 
 const serviceid = "12345678-1234-1234-1234-123456789012";
 const Zero = "9bad813d-370a-45e5-ac4d-bb4c2b65379f";
-const CHUNK_SIZE = 20; // Define your desired chunk size
+const CHUNK_SIZE = 20;
 
 export const BleContext = createContext();
 
@@ -30,6 +30,22 @@ export const BleProvider = ({ children }) => {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [unit, setUnit] = useState("kg");
+
+  const checkConnectionStatus = async () => {
+    if (selectedDevice) {
+      const connected = await BleManager.isPeripheralConnected(
+        selectedDevice.id
+      );
+      setIsConnected(connected);
+    } else {
+      setIsConnected(false);
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(checkConnectionStatus, 5000); // Check every 5 seconds
+    return () => clearInterval(interval);
+  }, [selectedDevice]);
 
   const sendChunkedData = async (data) => {
     const buffer = Buffer.from(data, "utf-8");

@@ -51,7 +51,6 @@ const NodeConfigScreen = ({ navigation }) => {
       const configData = JSON.stringify(nodeConfigData);
       console.log("Sending node configuration data: ", configData);
 
-      // Send the JSON string in chunks
       await sendChunkedData(configData);
 
       console.log("Node configuration data sent: ", configData);

@@ -93,10 +93,10 @@ android {
     }
      signingConfigs {
         release {
-            storeFile file('your_key_name.keystore')
-            storePassword "password123"
-            keyAlias "your_key_alias"
-            keyPassword "password123"
+            storeFile file('Jimnet_Racing.keystore')
+            storePassword "123456789"
+            keyAlias "1024"
+            keyPassword "123456789"
         }
     }
     buildTypes {
@@ -110,6 +110,7 @@ android {
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+             signingConfig signingConfigs.release
         }
     }
     packagingOptions {

@@ -7,7 +7,7 @@ const SplashScreen = ({ navigation }) => {
     // Navigate to Dashboard after 1 second
     const timer = setTimeout(() => {
       navigation.replace("Dashboard");
-    }, 1000);
+    }, 2000);
 
     return () => clearTimeout(timer); // Cleanup timer on unmount
   }, [navigation]);
