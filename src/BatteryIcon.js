@@ -21,7 +21,7 @@ const BatteryIcon = ({ size, batteryPercentage }) => {
         <View
           style={{
             backgroundColor: "#fff",
-            height: size * 0.33,
+            height: size * 0.42,
             width: batteryWidth,
           }}
         />
