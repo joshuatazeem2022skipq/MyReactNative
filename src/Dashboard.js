@@ -6,6 +6,7 @@ import {
   ImageBackground,
   StatusBar,
   Image,
+  ScrollView,
   TouchableOpacity,
   Dimensions,
 } from "react-native";
@@ -45,6 +46,10 @@ const Dashboard = () => {
     return weight ? weight.toFixed(1) : "N/A";
   };
 
+  const getBlockColor = (status) => {
+    return status ? styles.greenBlock : styles.redBlock;
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -58,172 +63,174 @@ const Dashboard = () => {
           <Appbar.Content style={styles.logoContainer} />
           <Image source={Logo} style={styles.logo} />
         </Appbar.Header>
-
-        <View style={styles.content}>
-          {/* Front Weight Block */}
-          <View style={styles.centerCard}>
-            <Text style={styles.cardTitle}>Front Weight</Text>
-            <View style={styles.card}>
-              <Text style={styles.cardValue}>
-                {formatWeight(bleData.frontWeight)}
-              </Text>
-            </View>
-          </View>
-          {/* LF And RF Block */}
-
-          <View style={styles.row}>
-            <View style={styles.column}>
-              <BatteryIcon
-                size={30}
-                batteryPercentage={bleData.lfBattery ?? "0"}
-              />
-
-              <Text style={styles.columnTitle}> LF</Text>
-              <View style={styles.smallCard}>
-                <Text style={styles.columnValue}>
-                  {formatWeight(bleData.lfWeight)}
-                </Text>
-                <Text style={styles.columnPercentage}>
-                  {bleData.lfWeightP ?? "N/A"}%
-                </Text>
-              </View>
-            </View>
-            <View style={styles.column}>
-              <BatteryIcon
-                size={30}
-                batteryPercentage={bleData.rfBattery ?? "N/A"}
-              />
-              <Text style={styles.columnTitle}>RF</Text>
-              <View style={styles.smallCard}>
-                <Text style={styles.columnValue}>
-                  {formatWeight(bleData.rfWeight)}
-                </Text>
-                <Text style={styles.columnPercentage}>
-                  {bleData.rfWeightP ?? "N/A"}%
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Cross Weight Block */}
-          <View style={styles.centerCard1}>
-            <Text style={styles.cardTitle}>Cross Weight</Text>
-            <View style={styles.card}>
-              <Text style={styles.cardValue}>
-                {formatWeight(bleData.crossWeight)}
-              </Text>
-            </View>
-          </View>
-
-          {/* LR And RR Block */}
-          <View style={styles.row}>
-            <View style={styles.column}>
-              <BatteryIcon
-                size={30}
-                batteryPercentage={bleData.lrBattery ?? "N/A"}
-              />
-              <Text style={styles.columnTitle}>LR</Text>
-              <View style={styles.smallCard}>
-                <Text style={styles.columnValue}>
-                  {formatWeight(bleData.lrWeight)}
-                </Text>
-                <Text style={styles.columnPercentage}>
-                  {bleData.lrWeightP ?? "N/A"}%
-                </Text>
-              </View>
-            </View>
-            <View style={styles.column}>
-              <BatteryIcon
-                size={30}
-                batteryPercentage={bleData.rrBattery ?? "N/A"}
-              />
-              <Text style={styles.columnTitle}>RR</Text>
-              <View style={styles.smallCard}>
-                <Text style={styles.columnValue}>
-                  {formatWeight(bleData.rrWeight)}
-                </Text>
-                <Text style={styles.columnPercentage}>
-                  {bleData.rrWeightP ?? "N/A"}%
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Rear Weight Block */}
-          <View style={styles.centerCard1}>
-            <Text style={styles.cardTitle}>Rear Weight</Text>
-            <View style={styles.card}>
-              <Text style={styles.cardValue}>
-                {formatWeight(bleData.rearWeight)}
-              </Text>
-            </View>
-          </View>
-          {/* Total Weight Block and Radio Buttons */}
-          <View style={styles.totalWeightContainer}>
-            <View style={styles.centerCard3}>
-              <Text style={styles.cardTitle}>Total Weight</Text>
-              <View style={styles.card5}>
+        <ScrollView style={styles.scroll}>
+          <View style={styles.content}>
+            {/* Front Weight Block */}
+            <View style={styles.centerCard}>
+              <Text style={styles.cardTitle}>Front Weight</Text>
+              <View style={styles.card}>
                 <Text style={styles.cardValue}>
-                  {formatWeight(bleData.totalWeight)}
+                  {formatWeight(bleData.frontWeight)}
                 </Text>
               </View>
             </View>
-            {/* Radio buttons for selecting unit */}
-            <View style={styles.radioContainer}>
-              <RadioButton.Group
-                onValueChange={(value) => handleChangeUnit(value)} // Call handleChangeUnit when value changes
-                value={unit}
-              >
-                {/* Radio buttons for selecting unit */}
-                <View style={styles.radioOption}>
-                  <Text style={styles.radioText}>Kg</Text>
-                  <RadioButton
-                    value="kg"
-                    color="#aaff00"
-                    uncheckedColor="#F7FC03"
-                  />
+            {/* LF And RF Block */}
+
+            <View style={styles.row}>
+              <View style={styles.column}>
+                <BatteryIcon
+                  size={30}
+                  batteryPercentage={bleData.lfBattery ?? "0"}
+                />
+                <Text style={styles.columnTitle}> LF</Text>
+                <View style={[styles.smallCard, getBlockColor(bleData.LF)]}>
+                  <Text style={styles.columnValue}>
+                    {formatWeight(bleData.lfWeight)}
+                  </Text>
+                  <Text style={styles.columnPercentage}>
+                    {bleData.lfWeightP ?? "N/A"}%
+                  </Text>
                 </View>
-                <View style={styles.radioOption1}>
-                  <Text style={styles.radioText}>Lbs</Text>
-                  <View style={styles.radioButtonWrapper}>
+              </View>
+              <View style={styles.column}>
+                <BatteryIcon
+                  size={30}
+                  batteryPercentage={bleData.rfBattery ?? "N/A"}
+                />
+                <Text style={styles.columnTitle}>RF</Text>
+                <View style={[styles.smallCard, getBlockColor(bleData.RF)]}>
+                  <Text style={styles.columnValue}>
+                    {formatWeight(bleData.rfWeight)}
+                  </Text>
+                  <Text style={styles.columnPercentage}>
+                    {bleData.rfWeightP ?? "N/A"}%
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Cross Weight Block */}
+            <View style={styles.centerCard1}>
+              <Text style={styles.cardTitle}>Cross Weight</Text>
+              <View style={styles.card}>
+                <Text style={styles.cardValue}>
+                  {formatWeight(bleData.crossWeight)}
+                </Text>
+              </View>
+            </View>
+
+            {/* LR And RR Block */}
+            <View style={styles.row}>
+              <View style={styles.column}>
+                <BatteryIcon
+                  size={30}
+                  batteryPercentage={bleData.lrBattery ?? "N/A"}
+                />
+                <Text style={styles.columnTitle}>LR</Text>
+                <View style={[styles.smallCard, getBlockColor(bleData.LR)]}>
+                  <Text style={styles.columnValue}>
+                    {formatWeight(bleData.lrWeight)}
+                  </Text>
+                  <Text style={styles.columnPercentage}>
+                    {bleData.lrWeightP ?? "N/A"}%
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.column}>
+                <BatteryIcon
+                  size={30}
+                  batteryPercentage={bleData.rrBattery ?? "N/A"}
+                />
+                <Text style={styles.columnTitle}>RR</Text>
+                <View style={[styles.smallCard, getBlockColor(bleData.RR)]}>
+                  <Text style={styles.columnValue}>
+                    {formatWeight(bleData.rrWeight)}
+                  </Text>
+                  <Text style={styles.columnPercentage}>
+                    {bleData.rrWeightP ?? "N/A"}%
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Rear Weight Block */}
+            <View style={styles.centerCard1}>
+              <Text style={styles.cardTitle}>Rear Weight</Text>
+              <View style={styles.card}>
+                <Text style={styles.cardValue}>
+                  {formatWeight(bleData.rearWeight)}
+                </Text>
+              </View>
+            </View>
+            {/* Total Weight Block and Radio Buttons */}
+            <View style={styles.totalWeightContainer}>
+              <View style={styles.centerCard3}>
+                <Text style={styles.cardTitle}>Total Weight</Text>
+                <View style={styles.card5}>
+                  <Text style={styles.cardValue}>
+                    {formatWeight(bleData.totalWeight)}
+                  </Text>
+                </View>
+              </View>
+              {/* Radio buttons for selecting unit */}
+              <View style={styles.radioContainer}>
+                <RadioButton.Group
+                  onValueChange={(value) => handleChangeUnit(value)} // Call handleChangeUnit when value changes
+                  value={unit}
+                >
+                  {/* Radio buttons for selecting unit */}
+                  <View style={styles.radioOption}>
+                    <RadioButton
+                      value="kg"
+                      color="#aaff00"
+                      uncheckedColor="#F7FC03"
+                    />
+                    <Text style={styles.radioText}>Kg</Text>
+                  </View>
+                  <View style={styles.radioOption1}>
                     <RadioButton
                       value="lbs"
                       color="#aaff00"
                       uncheckedColor="#F7FC03"
                     />
+                    <Text style={styles.radioText}>Lbs</Text>
                   </View>
-                </View>
-              </RadioButton.Group>
-            </View>
-          </View>
-
-          {/* Zero Block */}
-          <TouchableOpacity style={styles.button} onPress={handleZeroClick}>
-            <View style={styles.centerCard4}>
-              <View style={styles.card1}>
-                <Text style={styles.cardValue1}>Zero</Text>
+                </RadioButton.Group>
               </View>
             </View>
-          </TouchableOpacity>
-          {/* Connected text */}
-          <View style={styles.connectedContainer}>
-            <TouchableOpacity onPress={handleBluetooth}>
-              <Image source={BT} style={styles.btImage} />
+
+            {/* Zero Block */}
+            <TouchableOpacity style={styles.button} onPress={handleZeroClick}>
+              <View style={styles.centerCard4}>
+                <View style={styles.card1}>
+                  <Text style={styles.cardValue1}>Zero</Text>
+                </View>
+              </View>
             </TouchableOpacity>
-            <View style={{ flexDirection: "column" }}>
-              <Text
-                style={selectedDevice ? styles.connected : styles.disconnected}
-              >
-                {selectedDevice ? selectedDevice.name : "-"}
-              </Text>
-              <Text
-                style={selectedDevice ? styles.connected : styles.disconnected}
-              >
-                {isConnected ? "Connected" : "Disconnected"}
-              </Text>
+            {/* Connected text */}
+            <View style={styles.connectedContainer}>
+              <TouchableOpacity onPress={handleBluetooth}>
+                <Image source={BT} style={styles.btImage} />
+              </TouchableOpacity>
+              <View style={{ flexDirection: "column" }}>
+                <Text
+                  style={
+                    selectedDevice ? styles.connected : styles.disconnected
+                  }
+                >
+                  {selectedDevice ? selectedDevice.name : "-"}
+                </Text>
+                <Text
+                  style={
+                    selectedDevice ? styles.connected : styles.disconnected
+                  }
+                >
+                  {isConnected ? "Connected" : "Disconnected"}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </ImageBackground>
     </View>
   );
@@ -260,7 +267,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 40,
   },
   centerCard: {
     alignItems: "center",
@@ -275,19 +282,19 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#aaff00",
     padding: 10,
-    borderRadius: 8,
-    width: width * 0.3,
+    borderRadius: 20,
     alignItems: "center",
+    width: width * 0.3,
+    justifyContent: "center",
   },
   cardValue: {
-    fontSize: width * 0.044,
-    fontWeight: "bold",
-    color: "black",
+    fontSize: width * 0.04,
+    color: "#000",
   },
   row: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    width: "80%",
+    justifyContent: "space-around",
+    width: "100%",
   },
   column: {
     flexDirection: "column",
@@ -295,140 +302,135 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   columnTitle: {
-    marginBottom: 6,
-    fontSize: width * 0.05,
-    fontWeight: "bold",
-    flexDirection: "row",
-    alignItems: "center",
-    color: "#aaff00",
-    textAlign: "right",
-  },
-  smallCard: {
-    backgroundColor: "green",
-    padding: 2,
-    borderRadius: 8,
-    alignItems: "center",
-    width: width * 0.32,
-  },
-  columnValue: {
+    marginBottom: 1,
     fontSize: width * 0.04,
     fontWeight: "bold",
-    color: "#fff",
+    color: "#F7FC03",
+  },
+  smallCard: {
+    padding: 5,
+    borderRadius: 10,
+    alignItems: "center",
+    width: width * 0.32,
+    height: height * 0.07,
+
+    justifyContent: "center",
+  },
+  greenBlock: {
+    backgroundColor: "#00ff00",
+  },
+  redBlock: {
+    backgroundColor: "#ff0000",
+  },
+  columnValue: {
+    fontSize: 19,
+    fontWeight: "bold",
+    color: "#000",
   },
   columnPercentage: {
     fontSize: width * 0.04,
-    fontWeight: "bold",
-    color: "#fff",
+    color: "#000",
   },
   centerCard1: {
     alignItems: "center",
-    marginTop: 20,
-  },
-  centerCard2: {
-    alignItems: "center",
-    marginTop: 20,
+    marginBottom: 20,
+    marginTop: 10,
   },
   centerCard3: {
     alignItems: "center",
-    marginTop: 5,
-    marginLeft: width * 0.3,
-  },
-  centerCard4: {
-    alignItems: "center",
-    marginTop: 10,
-  },
-  card1: {
-    backgroundColor: "red",
-    padding: 8,
-    borderRadius: 8,
-    width: width * 0.4,
-    alignItems: "center",
-    height: height * 0.07,
-  },
-  cardValue1: {
-    fontSize: width * 0.05,
-    fontWeight: "bold",
-    color: "black",
-    marginTop: 5,
-  },
-  connectedContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  btImage: {
-    width: width * 0.08,
-    height: height * 0.06,
-    marginRight: 10,
-  },
-  connectedText: {
-    fontSize: width * 0.045,
-    fontWeight: "bold",
-    color: "#F7FC03",
-  },
-  connected: {
-    color: "#F7FC03",
-    fontSize: 19,
-  },
-  disconnected: {
-    color: "red",
-    fontSize: 18,
-  },
-  menuIcon: {
-    cursor: "pointer",
-  },
-  loginContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 999,
+    marginBottom: 20,
+    marginTop: 1,
+    marginLeft: width * 0.23,
   },
   card5: {
     backgroundColor: "#aaff00",
     padding: 10,
-    borderRadius: 8,
-    width: width * 0.4,
+    borderRadius: 20,
+    alignItems: "center",
+    width: width * 0.3,
+    height: height * 0.05,
+    justifyContent: "center",
+  },
+  totalWeightContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 30,
+    marginTop: 5,
+  },
+  radioContainer: {
+    flexDirection: "row",
     alignItems: "center",
   },
   radioOption: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 10,
-    marginTop: 20,
+    marginLeft: 40,
   },
   radioOption1: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 20,
+    marginLeft: 40,
   },
   radioText: {
-    fontSize: width * 0.048,
-    color: "#F7FC03",
-    marginRight: 5,
-    fontWeight: "900",
+    fontSize: 16,
+    color: "#fff",
+    marginRight: 2,
   },
-  totalWeightContainer: {
-    flexDirection: "row",
+  radioButtonWrapper: {
+    marginLeft: 0,
+  },
+  centerCard4: {
+    alignItems: "center",
+    marginBottom: 1,
+    marginTop: 2,
+  },
+  card1: {
+    backgroundColor: "red",
+    padding: 3,
+    borderRadius: 8,
+    width: width * 0.3,
+    alignItems: "center",
+    height: height * 0.05,
+  },
+  cardValue1: {
+    fontSize: width * 0.06,
+    color: "#000",
+    textAlign: "center",
+  },
+  button: {
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
-    marginTop: 20,
-    width: "100%",
+    marginTop: 10,
   },
-  radioContainer: {
+  connectedContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginLeft: "auto",
+    position: "relative",
+    bottom: 0,
+    right: 130,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginTop: 14,
   },
-  radioButton: {
+  btImage: {
+    width: width * 0.1,
+    height: height * 0.05,
+    resizeMode: "contain",
+    marginRight: 10,
+    alignSelf: "center",
+  },
+  connected: {
+    color: "#F7FC03",
+    fontSize: 19,
+    fontWeight: "bold",
+    marginTop: 1,
+  },
+  disconnected: {
     color: "red",
+    textAlign: "center",
+    fontWeight: "bold",
+    marginTop: 1,
   },
 });
 

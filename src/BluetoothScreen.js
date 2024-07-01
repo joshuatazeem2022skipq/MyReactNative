@@ -103,19 +103,6 @@ const BluetoothBLETerminal = () => {
     }
   };
 
-  // const loadPairedDevices = async () => {
-  //   try {
-  //     await AsyncStorage.getItem("example_key");
-
-  //     const pairedDevicesString = await AsyncStorage.getItem("pairedDevices");
-  //     if (pairedDevicesString) {
-  //       const pairedDevices = JSON.parse(pairedDevicesString);
-  //       setPaired(pairedDevices);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error loading paired devices:", error);
-  //   }
-  // };
   const loadPairedDevices = async () => {
     try {
       const pairedDevicesString = await AsyncStorage.getItem("pairedDevices");
@@ -142,31 +129,17 @@ const BluetoothBLETerminal = () => {
       const isAlreadyPaired = paired.some(
         (pairedDevice) => pairedDevice.id === device.id
       );
-
-      // if (!isAlreadyPaired) {
-      //   // Add the device to the paired list
-      //   setPaired((prevPaired) => {
-      //     const updatedPaired = [...prevPaired, device];
-      //     savePairedDevices(updatedPaired);
-      //     return updatedPaired;
-      //   });
-      // }
       if (!isAlreadyPaired) {
-        // Add the device to the paired list
         const updatedPaired = [...paired, device];
         setPaired(updatedPaired);
-        savePairedDevices(updatedPaired); // Save updated paired devices
+        savePairedDevices(updatedPaired);
       }
-
-      // Remove the device from the scan list
       setDevices((prevDevices) =>
         prevDevices.filter((d) => d.id !== device.id)
       );
 
       const deviceInfo = await BleManager.retrieveServices(device.id);
       console.log("Device info:", deviceInfo);
-
-      // Check if the characteristic exists in the retrieved services
       const characteristicExists = deviceInfo.characteristics.some(
         (char) => char.characteristic === node1
       );
@@ -224,7 +197,7 @@ const BluetoothBLETerminal = () => {
         } catch (error) {
           console.error("Error reading message:", error);
           if (error.message.includes("Characteristic")) {
-            console.error(`Characteristic not found: ${error.message}`);
+            console.error("Characteristic not found:", error.message);
           }
         }
       }

@@ -27,6 +27,12 @@ export const BleProvider = ({ children }) => {
     rearWeight: "",
     totalWeight: "",
   });
+  const [blockColors, setBlockColors] = useState({
+    lfColor: false,
+    rfColor: false,
+    lrColor: false,
+    rrColor: false,
+  });
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [unit, setUnit] = useState("kg");
@@ -112,6 +118,8 @@ export const BleProvider = ({ children }) => {
         unit,
         handleChangeUnit,
         handleZeroClick,
+        blockColors,
+        setBlockColors,
       }}
     >
       {children}
